@@ -94,8 +94,8 @@ def train_net(args):
         logging.info('epoch[%d], Training: %s=%f'%(epoch,name,acc))
         #name,val_acc = test_net(net,val_data,ctx)
         #validate
+        val_data.reset()
         for kbatch in val_data:
-            val_data.reset()
             metric.reset()
             val_data = gluon.utils.split_and_load(kbatch.data[0], ctx_list=ctx, batch_axis=0)
             val_label = gluon.utils.split_and_load(kbatch.label[0], ctx_list=ctx, batch_axis=0)
@@ -104,7 +104,7 @@ def train_net(args):
                 output.append(net(x))
             metric.update(val_label,output)
         name,acc = metric.get()
-        logging.info('epoch[%d]m,Val: %s=%f'%(name,acc))
+        logging.info('epoch[{}],Val: {}={}'.format(epoch,name,acc))
 
 if __name__=="__main__":
     args = parse_args()

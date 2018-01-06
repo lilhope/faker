@@ -12,22 +12,29 @@ import numpy as np
 
 class WordLoader(mx.io.DataIter):
     
-    def __init__(self,dataset,batch_size,is_train=True,shuffle=False):
+    def __init__(self,dataset,batch_size,mode='train',shuffle=False):
         
         self.batch_size = batch_size
         dataset = h5py.File(dataset)
-        self.is_train = is_train
+        self.mode = mode
         self.data_name = ['data']
-        self.data = dataset['data'].value
+        #self.data = dataset['data']
         #self.label = dataset['label'].value
-        if is_train:
+        if self.mode=='train':
             self.label_name = ['label']
-            self.label = dataset['label'].value
+            self.data = dataset['data'].value[:86000]
+            self.label = dataset['label'].value[:86000]
+        elif self.mode=='val':
+            self.label_name = ['label']
+            self.data = dataset['data'].value[86000:]
+            self.label = dataset['label'].value[86000:]
         else:
-            self.label_name = None
+            self.label_name=None
+            self.data = dataset['data'].value
         dataset.close()
         self.shuffle=shuffle
         self.size = self.data.shape[0]
+        print(self.size)
         self.index = np.arange(self.size)
         self.cur = 0
     @property
@@ -35,7 +42,7 @@ class WordLoader(mx.io.DataIter):
         return [(k,v.shape) for k,v in zip(self.data_name,self._data)]    
     @property
     def provide_label(self):
-        if self.is_train:
+        if not self.mode=='test':
             return [(k,v.shape) for k,v in zip(self.label_name,self._label)]
         else:
             return None
@@ -70,7 +77,7 @@ class WordLoader(mx.io.DataIter):
         cur_to = self.cur + self.batch_size
         index = self.index[cur_from:cur_to]
         self._data = [self.data[index]]
-        if self.is_train:
+        if not self.mode=='test':
             self._label = [self.label[index]]
         else:
             self._label = None
