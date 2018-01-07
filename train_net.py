@@ -14,7 +14,7 @@ import argparse
 import logging
 from config import config
 from lib.Loader import WordLoader
-from lib.metric import Accuracy
+from lib.metric import Accuracy,LogLoss
 from model_factory import word_factory
 
 
@@ -34,6 +34,11 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+def parse_log(names,values):
+    info = ''
+    for name,value in zip(names,values):
+        info += "{} = {} \t".format(name,value)
+    return info
 
 def train_net(args):
     # set up logger
@@ -66,7 +71,10 @@ def train_net(args):
     wd = args.wd
     Trainer = gluon.Trainer(net.collect_params(),'adam',{'learning_rate':lr,'wd':wd})
     #Loss and evluate metirc
-    metric = Accuracy(0.3)
+    metric = mx.metric.CompositeEvalMetric()
+    #loss_metric = LogLoss()
+    metric.add(Accuracy(0.3))
+    metric.add(LogLoss())
     Loss = gluon.loss.SigmoidBinaryCrossEntropyLoss(from_sigmoid=True)
     for epoch in range(args.begin_epoch,args.end_epoch):
         train_data.reset()
@@ -88,23 +96,26 @@ def train_net(args):
             metric.update(label,outputs)
             #output the log
             if not (i) % (args.frequency):
-                name,acc = metric.get()
-                logging.info('epoch[{}] batch[{}], {}={}'.format(epoch,i,name,acc))
-        name,acc = metric.get()
-        logging.info('epoch[%d], Training: %s=%f'%(epoch,name,acc))
+                names,values = metric.get()
+                info = parse_log(names,values)
+                logging.info('epoch[{}] batch[{}]'.format(epoch,i) + info )
+        names,values = metric.get()
+        info = parse_args(names,values)
+        logging.info('epoch[{}], Training '.format(epoch) + info)
         #name,val_acc = test_net(net,val_data,ctx)
         #validate
         val_data.reset()
         for kbatch in val_data:
             metric.reset()
-            val_data = gluon.utils.split_and_load(kbatch.data[0], ctx_list=ctx, batch_axis=0)
-            val_label = gluon.utils.split_and_load(kbatch.label[0], ctx_list=ctx, batch_axis=0)
+            valdata = gluon.utils.split_and_load(kbatch.data[0], ctx_list=ctx, batch_axis=0)
+            vallabel = gluon.utils.split_and_load(kbatch.label[0], ctx_list=ctx, batch_axis=0)
             output = []
-            for x in val_data:
+            for x in valdata:
                 output.append(net(x))
-            metric.update(val_label,output)
-        name,acc = metric.get()
-        logging.info('epoch[{}],Val: {}={}'.format(epoch,name,acc))
+            metric.update(vallabel,output)
+        names,values = metric.get()
+        info = parse_args(names,values)
+        logging.info('epoch[{}],Val'.format(epoch) + info)
 
 if __name__=="__main__":
     args = parse_args()
