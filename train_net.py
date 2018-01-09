@@ -21,7 +21,7 @@ from model_factory import word_factory
 def parse_args():
 
     parser = argparse.ArgumentParser(description='Train Text Classification model')
-    parser.add_argument('--model',help='which model used',default='CNNText',type=str)
+    parser.add_argument('--model',help='which model used',default='RNNText',type=str)
     parser.add_argument('--gpus',help='use which gpu to train the model',default='0',type=str)
     parser.add_argument('--lr',help='the basic learning rate',default=0.0001,type=float)
     parser.add_argument('--batch_size',help='batch size',default=8,type=int)
@@ -61,6 +61,10 @@ def train_net(args):
         net.load_params(model_path + '/' + str(args.begin_epoch).rjust(3,'0') + '.params',ctx=ctx)
     else:
         net.collect_params().initialize(init=mx.init.Xavier(),ctx=ctx)
+    if config.begin_states:
+        begin_states = net.feat_extractor.begin_states(batch_size=args.batch_size,func = mx.nd.zeros,ctx=ctx[0])
+    else:
+        begin_states = None
 
     #Data Loader
     data_root = config.data_root
@@ -89,7 +93,12 @@ def train_net(args):
             Ls = []
             with ag.record():
                 for x,y in zip(data,label):
-                    z = net(x)
+                    if begin_states:
+                        print(x.shape)
+                        z = net(x,begin_states)
+                        
+                    else:
+                        z = net(x)
                     L = Loss(z,y)
                     Ls.append(L)
                     outputs.append(z)
@@ -114,7 +123,11 @@ def train_net(args):
             vallabel = gluon.utils.split_and_load(kbatch.label[0], ctx_list=ctx, batch_axis=0)
             output = []
             for x in valdata:
-                output.append(net(x))
+                if begin_states:
+                    z = net(x,begin_states)
+                else:
+                    z = net(x)
+                output.append(z)
             metric.update(vallabel,output)
         names,values = metric.get()
         info = parse_log(names,values)
