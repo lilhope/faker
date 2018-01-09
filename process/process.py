@@ -47,7 +47,7 @@ if __name__ == "__main__":
     df_train = pd.read_csv(train_data)
     df_test = pd.read_csv(test_data)
     sents_train = df_train['comment_text'].fillna('_na_').values
-    sents_test = df_train['comment_text'].fillna('_na_').values
+    sents_test = df_test['comment_text'].fillna('_na_').values
     """
     tokenizer = Tokenizer(num_words=20000)
     tokenizer.fit_on_texts(sents_train)
