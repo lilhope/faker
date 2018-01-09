@@ -12,6 +12,7 @@ from mxnet import gluon
 from mxnet import autograd as ag
 import argparse
 import logging
+import pandas as pd
 from config import config
 from lib.Loader import WordLoader
 from lib.metric import Accuracy,LogLoss
@@ -19,7 +20,7 @@ from model_factory import word_factory
 
 
 def parse_args():
-    
+
     parser = argparse.ArgumentParser(description='Train Text Classification model')
     parser.add_argument('--model',help='which model used',default='CNNText',type=str)
     parser.add_argument('--gpus',help='use which gpu to train the model',default='0',type=str)
@@ -38,7 +39,7 @@ def sumbit(args):
     logging.basicConfig()
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
-    
+
     ctx = [mx.gpu(int(i)) for i in args.gpus.split(',')] if args.gpus else [mx.cpu()]
     config.model = args.model
     config.ctx = ctx
@@ -49,8 +50,8 @@ def sumbit(args):
     net = word_factory(config)
     logging.info('submit the result from epoch {}'.format(args.epoch))
     net.collect_params().load(model_path + '/' + str(args.epoch).rjust(3,'0') + '.params',ctx=ctx)
-    
-    
+
+
     #Data Loader
     data_root = config.data_root
     dataset = os.path.join(data_root,'word_test.h5py')
@@ -60,24 +61,18 @@ def sumbit(args):
     for kbatch in test_data:
         valdata = gluon.utils.split_and_load(kbatch.data[0], ctx_list=ctx, batch_axis=0)
         for x in valdata:
-            output.append(net(x))
-    
-    print(output)
+            tmp = net(x).asnumpy()[0]
+            print(tmp.shape)
+            output.append(tmp)
+
+    df_output = pd.DataFrame(output,columns=['toxic','severe_toxic','obscene','threat','insult','identity_hate'])
+    df_test = pd.read_csv(os.path.join(config.data_root,'test.csv'))
+    df_test = df_test.drop(['comment_text'],axis=1)
+    df_res = pd.concat((df_test,df_output),axis=1)
+    result_path = os.path.join(config.result_path,config.model,'submit.csv')
+    df_res.to_csv(result_path)
+
 
 if __name__=="__main__":
     args = parse_args()
     sumbit(args)
-            
-            
-        
-        
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
