@@ -15,6 +15,7 @@ import logging
 from config import config
 from lib.Loader import WordLoader
 from lib.metric import Accuracy,LogLoss
+from lib.loss import FocalLoss
 from model_factory import word_factory
 
 
@@ -82,7 +83,8 @@ def train_net(args):
     #loss_metric = LogLoss()
     metric.add(Accuracy(0.5))
     metric.add(LogLoss())
-    Loss = gluon.loss.SigmoidBinaryCrossEntropyLoss(from_sigmoid=True)
+    #Loss = gluon.loss.SigmoidBinaryCrossEntropyLoss(from_sigmoid=True)
+    Loss = FocalLoss()
     for epoch in range(args.begin_epoch,args.end_epoch):
         train_data.reset()
         metric.reset()
@@ -94,7 +96,6 @@ def train_net(args):
             with ag.record():
                 for x,y in zip(data,label):
                     if begin_states:
-                        print(x.shape)
                         z = net(x,begin_states)
                         
                     else:
