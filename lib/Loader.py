@@ -12,26 +12,24 @@ import numpy as np
 
 class WordLoader(mx.io.DataIter):
     
-    def __init__(self,dataset,batch_size,mode='train',shuffle=False):
+    def __init__(self,data,batch_size,mode='train',label=None,shuffle=False):
         
         self.batch_size = batch_size
-        dataset = h5py.File(dataset)
         self.mode = mode
         self.data_name = ['data']
         #self.data = dataset['data']
         #self.label = dataset['label'].value
         if self.mode=='train':
             self.label_name = ['label']
-            self.data = dataset['data'].value[:86000]
-            self.label = dataset['label'].value[:86000]
+            self.data = data
+            self.label = label
         elif self.mode=='val':
             self.label_name = ['label']
-            self.data = dataset['data'].value[86000:]
-            self.label = dataset['label'].value[86000:]
+            self.data = data
+            self.label = label
         else:
             self.label_name=None
-            self.data = dataset['data'].value
-        dataset.close()
+            self.data = data
         self.shuffle=shuffle
         self.size = self.data.shape[0]
         print(self.size)
