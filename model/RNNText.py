@@ -17,11 +17,11 @@ class RNNText(gluon.Block):
         super(RNNText,self).__init__()
         with self.name_scope():
             if opt.model=='lstm':
-                self.rnn = rnn.LSTM(opt.num_hidden,opt.num_layers,bidirectional=opt.bidirectional)
+                self.rnn = rnn.LSTM(opt.num_hidden,opt.num_layers,bidirectional=opt.bidirectional,dropout=opt.drop)
             elif opt.model == 'gru':
-                self.rnn = rnn.GRU(opt.num_hidden,opt.num_layers,bidirectional=opt.bidirectional)
+                self.rnn = rnn.GRU(opt.num_hidden,opt.num_layers,bidirectional=opt.bidirectional,dropout=opt.drop)
             elif opt.model == 'rnn':
-                self.rnn = rnn.RNN(opt.num_hidden,opt.num_layers)
+                self.rnn = rnn.RNN(opt.num_hidden,opt.num_layers,dropout=opt.drop)
             else:
                 raise NotImplementedError
             self.fc = nn.Dense(opt.num_hidden*2)
@@ -30,10 +30,12 @@ class RNNText(gluon.Block):
     def forward(self,x,hidden):
         #conver NTC to TNC
         x = F.transpose(x,(1,0,2))
-        output,hidden= self.rnn(x,hidden)
-        print(output.shape)
-        #print(hidden)
-        output = self.fc(hidden[-1])
+        output,hiddens= self.rnn(x,hidden)
+        #print(output.shape)
+	hidden = hiddens[-1]
+	#print(hidden.shape)
+	hidden = F.transpose(hidden,(1,0,2))
+        output = self.fc(hidden)
         output = self.bn(output)
         output = F.relu(output)
         return output

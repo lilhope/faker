@@ -12,6 +12,7 @@ from mxnet import gluon
 from mxnet import autograd as ag
 import argparse
 import logging
+import numpy as np
 import pandas as pd
 from config import config
 from lib.Loader import WordLoader
@@ -62,15 +63,15 @@ def sumbit(args):
         valdata = gluon.utils.split_and_load(kbatch.data[0], ctx_list=ctx, batch_axis=0)
         for x in valdata:
             tmp = net(x).asnumpy()[0]
-            print(tmp.shape)
+            #print(tmp.shape)
             output.append(tmp)
-
+    print(len(output))
     df_output = pd.DataFrame(output,columns=['toxic','severe_toxic','obscene','threat','insult','identity_hate'])
-    df_test = pd.read_csv(os.path.join(config.data_root,'test.csv'))
-    df_test = df_test.drop(['comment_text'],axis=1)
-    df_res = pd.concat((df_test,df_output),axis=1)
+    df_test = pd.read_csv(os.path.join(config.data_root,'sample_submission.csv'))
+    list_classes = ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"]
+    df_test[list_classes] = np.array(output)
     result_path = os.path.join(config.result_path,config.model,'submit.csv')
-    df_res.to_csv(result_path)
+    df_test.to_csv(result_path,index=False)
 
 
 if __name__=="__main__":

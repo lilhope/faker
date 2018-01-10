@@ -60,7 +60,7 @@ class WordLoader(mx.io.DataIter):
         if self.shuffle:
             np.random.shuffle(self.index)
     def iter_next(self):
-        return self.cur + self.batch_size < self.size
+        return self.cur + self.batch_size <= self.size
     
     def next(self):
         if self.iter_next():
@@ -76,9 +76,9 @@ class WordLoader(mx.io.DataIter):
         cur_from = self.cur
         cur_to = self.cur + self.batch_size
         index = self.index[cur_from:cur_to]
-        self._data = [self.data[index]]
+        self._data = [mx.nd.array(self.data[index])]
         if not self.mode=='test':
-            self._label = [self.label[index]]
+            self._label = [mx.nd.array(self.label[index])]
         else:
             self._label = None
 if __name__=="__main__":
