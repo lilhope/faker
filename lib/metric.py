@@ -31,7 +31,7 @@ class Accuracy(mx.metric.EvalMetric):
 
 class LogLoss(mx.metric.EvalMetric):
     
-    def __init__(self,eps=1e-5):
+    def __init__(self,eps=1e-12):
         super(LogLoss,self).__init__('LogLoss')
         self.eps = eps
         

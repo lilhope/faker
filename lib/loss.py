@@ -21,8 +21,8 @@ class FocalLoss(gluon.loss.Loss):
         
     def hybrid_forward(self,F,output,label):
       
-        loss = -(self._alpha * ((1. - output) ** self._gamma) * F.log(output + 1e-8) * label + \
-             self._alpha * ((output) ** self._gamma) * F.log(1. - output + 1e-8) * (1. - label))
+        loss = -(self._alpha * ((1. - output) ** self._gamma) * F.log(output + 1e-12) * label + \
+             self._alpha * ((output) ** self._gamma) * F.log(1. - output + 1e-12) * (1. - label))
         #print(loss)
         return F.mean(loss,axis = self._batch_axis,exclude=True)
     

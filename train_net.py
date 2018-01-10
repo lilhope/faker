@@ -17,14 +17,16 @@ from lib.Loader import WordLoader
 from lib.metric import Accuracy,LogLoss
 from lib.loss import FocalLoss
 from model_factory import word_factory
-
+from sklearn.model_selection import train_test_split
+import h5py
+import numpy as np
 
 def parse_args():
 
     parser = argparse.ArgumentParser(description='Train Text Classification model')
-    parser.add_argument('--model',help='which model used',default='RNNText',type=str)
+    parser.add_argument('--model',help='which model used',default='CNNText',type=str)
     parser.add_argument('--gpus',help='use which gpu to train the model',default='0',type=str)
-    parser.add_argument('--lr',help='the basic learning rate',default=0.0001,type=float)
+    parser.add_argument('--lr',help='the basic learning rate',default=0.001,type=float)
     parser.add_argument('--batch_size',help='batch size',default=8,type=int)
     parser.add_argument('--momentum',help='momentum value for optimizer',default=0.9,type=float)
     parser.add_argument('--wd', type=float, default=0.0001,
@@ -69,9 +71,19 @@ def train_net(args):
 
     #Data Loader
     data_root = config.data_root
-    dataset = os.path.join(data_root,'word_train.h5py')
-    train_data = WordLoader(dataset,args.batch_size,mode='train',shuffle=True)
-    val_data = WordLoader(dataset,args.batch_size,mode='val',shuffle=False)
+    dataset = h5py.File(os.path.join(data_root,'word_train.h5py'))
+    data = dataset['data'].value
+    label = dataset['label'].value
+    any_cat_pos = np.sum(label,1)
+    data_train,data_val,label_train,label_val = train_test_split(data,label,
+								test_size=0.2,
+								stratify = any_cat_pos,
+								random_state=2018)
+    print(data_train.shape)
+    print(label_train.shape)
+
+    train_data = WordLoader(data_train,args.batch_size,mode='train',label=label_train,shuffle=True)
+    val_data = WordLoader(data_val,args.batch_size,mode='val',label=label_val,shuffle=False)
 
     #Optimizer
     lr = args.lr
